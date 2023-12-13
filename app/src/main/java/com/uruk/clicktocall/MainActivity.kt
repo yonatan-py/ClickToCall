@@ -36,28 +36,23 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        db.collection("users")
-            .document("UGcFEEx4kUzS7Y90NogY")
-            .get()
-            .addOnCompleteListener(OnCompleteListener { task: Task<DocumentSnapshot> ->
-            if (task.isSuccessful) {
-                val document: DocumentSnapshot = task.result!!
 
-                if (document.exists()) {
-                    // Document found, you can access the data using document.data
-                    val data = document.data
-                    // Do something with the data
-                    Log.d(TAG, "DocumentSnapshot data: ${data}")
-                } else {
-                    // Document does not exist
-                }
-            } else {
-                // An error occurred while fetching the document
-                val exception = task.exception
-                // Handle the error
+        val docRef = db.collection("users").document("UGcFEEx4kUzS7Y90NogY")
+
+        docRef.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                Log.w(TAG, "Listen failed.", e)
+                return@addSnapshotListener
             }
-        })
-    }
+
+            if (snapshot != null && snapshot.exists()) {
+                Log.d(TAG, "Current data: " + snapshot.data)
+            } else {
+                Log.d(TAG, "Current data: null")
+            }
+        }
+
+   }
 }
 
 @Composable
