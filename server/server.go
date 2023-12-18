@@ -63,7 +63,7 @@ func sendMessage(ctx context.Context, client messaging.Client, registrationToken
 
 func main() {
 
-	opt := option.WithCredentialsFile("./click-to-call-d2769-2021c5c952d8.json")
+	opt := option.WithCredentialsFile("./click-to-call.json")
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		log.Fatalf("Error initializing Firebase app: %v", err)
