@@ -6,6 +6,8 @@ const isProduction = process.env.NODE_ENV == 'production';
 
 
 const config = {
+    devtool: "inline-source-map",
+    
     entry: './src/index.ts',
     output: {
         path: path.resolve(__dirname, 'dist'),
