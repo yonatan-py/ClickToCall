@@ -1,5 +1,6 @@
 package com.uruk.clicktocall
 
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,9 +14,9 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import android.app.Notification
 
 // import com.uruk.clicktocall.R
 
@@ -44,21 +45,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // Check if message contains a notification payload.
         remoteMessage.notification?.let {
             Log.d(TAG, "Message Notification Body: ${it.body}")
+            sendNotification("${it.body}")
         }
-
-        // Also if you intend on generating your own notifications as a result of a received FCM
-        // message, here is where that should be initiated. See sendNotification method below.
     }
-    // [END receive_message]
 
     private fun needsToBeScheduled() = true
 
-    // [START on_new_token]
-    /**
-     * Called if the FCM registration token is updated. This may occur if the security of
-     * the previous token had been compromised. Note that this is called when the
-     * FCM registration token is initially generated so this is where you would retrieve the token.
-     */
     override fun onNewToken(token: String) {
         Log.d(TAG, "Refreshed token: $token")
 
