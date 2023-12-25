@@ -6,22 +6,16 @@ import (
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
 	"fmt"
-	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
 	"os"
 )
 
-const projectID = "click-to-call-d2769"
 const registrationToken = "cbWMXrTYRg-VQQSoPpRq7T:APA91bGYxuLIdfvTTik_0FVhJ3yG5djtRSUZ6sHgXRBrVd0gGbDskydRDwamNTiUztpk9oc25oXwm3-AviioahOlwAJTn6cxRzxdcFPG3O37Rus2p6RiI6nSiYkVqb4kaYY4FC56cdZM"
 
-func startListeningForCalls(ctx context.Context) {
-	opt := option.WithCredentialsFile("./click-to-call.json")
-	app, err := firebase.NewApp(context.Background(), nil, opt)
-	if err != nil {
-		log.Fatalf("Error initializing Firebase app: %v", err)
-	}
+func startListeningForCalls(ctx context.Context, app *firebase.App, projectID string) {
+
 	client, err := app.Messaging(ctx)
 	if err != nil {
 		log.Fatalf("error getting Messaging client: %v\n", err)
@@ -31,7 +25,7 @@ func startListeningForCalls(ctx context.Context) {
 		println(number)
 		sendMessage(ctx, *client, number)
 	}
-	err = listenDocument(ctx, notifyChange)
+	err = listenDocument(ctx, projectID, notifyChange)
 	if err != nil {
 		return
 	}
@@ -57,7 +51,7 @@ func sendMessage(ctx context.Context, client messaging.Client, number string) {
 	fmt.Println("Successfully sent message:", response)
 }
 
-func listenDocument(ctx context.Context, callback func(map[string]interface{})) error {
+func listenDocument(ctx context.Context, projectID string, callback func(map[string]interface{})) error {
 
 	client, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
@@ -78,4 +72,16 @@ func listenDocument(ctx context.Context, callback func(map[string]interface{})) 
 
 		callback(snap.Data())
 	}
+}
+
+func writeCode(ctx context.Context, client *firestore.Client, userId string, code string) error {
+	_, err := client.Collection("users").Doc(userId).Set(ctx, map[string]interface{}{
+		"code": code,
+	}, firestore.MergeAll)
+	if err != nil {
+		// Handle any errors in an appropriate way, such as returning them.
+		log.Printf("An error has occurred: %s", err)
+	}
+
+	return err
 }
