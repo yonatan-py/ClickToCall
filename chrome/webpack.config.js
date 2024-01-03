@@ -6,9 +6,11 @@ const isProduction = process.env.NODE_ENV == 'production';
 
 
 const config = {
-    devtool: "inline-source-map",
-    
-    entry: './src/index.ts',
+    devtool: 'inline-source-map',
+    entry: {
+        popup: './src/popup.tsx',
+        background: './src/background.ts',
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
     },
@@ -39,9 +41,7 @@ const config = {
 
 module.exports = () => {
     if (isProduction) {
-        config.mode = 'production';
-        
-        
+        config.mode = 'production';        
     } else {
         config.mode = 'development';
     }

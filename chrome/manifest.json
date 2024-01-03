@@ -1,16 +1,17 @@
 {
     "manifest_version": 3,
-    "name": "Hello Extensions",
-    "description": "Base Level Extension",
+    "name": "Click To Call",
+    "description": "you click you call",
     "version": "1.0",
     "action": {
-        "default_popup": "hello.html",
+        "default_popup": "src/popup.html",
         "default_icon": "hello_extensions.png"
     },
     "background": {
-        "service_worker": "dist/main.js"
-    },
+        "service_worker": "dist/background.js"
+    },    
     "permissions": [
-        "contextMenus"
+        "contextMenus", 
+        "storage"
     ]
 }
