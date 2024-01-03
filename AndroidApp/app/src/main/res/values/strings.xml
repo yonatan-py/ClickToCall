@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Click To Call</string>
     <string name="msg_token_fmt">token: %d</string>
+    <string name="channel_id">channel_id</string>
 </resources>

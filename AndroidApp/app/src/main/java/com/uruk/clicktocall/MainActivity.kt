@@ -37,8 +37,8 @@ import java.io.IOException
 class MainActivity : ComponentActivity() {
 
     private val TAG = "MainActivity"
-    var code = ""
-    var token = ""
+    private var code = ""
+    private var token = ""
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -78,16 +78,9 @@ class MainActivity : ComponentActivity() {
                 Log.w(TAG, "Fetching FCM registration token failed", task.exception)
                 return@OnCompleteListener
             }
-
-            // Get new FCM registration token
             token = task.result
-
-
-            // Log and toast
             val msg = String.format("token: %s", token)
             Log.d(TAG, msg)
-            Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-
         })
         askNotificationPermission()
     }
@@ -113,6 +106,7 @@ class MainActivity : ComponentActivity() {
 
 class SendCodeToServer : AsyncTask<String, Void, Response?>() {
 
+    @Deprecated("Deprecated in Java")
     override fun doInBackground(vararg params: String): Response? {
         try {
 
