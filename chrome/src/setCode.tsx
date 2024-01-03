@@ -26,7 +26,6 @@ const SetCode = () => {
     function updateCredentials() {
         chrome.storage.local.get(["clickToCall.secret", "clickToCall.userID"], (data) => {
             console.log(data)
-            debugger
             setSecret(data["clickToCall.secret"])
             setUserID(data["clickToCall.userID"])
         })
@@ -41,8 +40,6 @@ const SetCode = () => {
             sendCodeToServer(code, updateCredentials)
         }
     }
-    // const secret = "secret"
-    // const userID = "userID"
     return (secret && userID ?
             <div>Logged in!</div>:
             <input type="text" value={code} onChange={onCodeUpdate}/>)

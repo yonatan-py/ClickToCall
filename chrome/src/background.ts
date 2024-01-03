@@ -19,6 +19,9 @@ chrome.runtime.onInstalled.addListener(async () => {
       headers: {
           "Content-type": "application/json"
       }
+    }).then(res => {
+      console.log("call sent to server")
+      console.log(res.json())
     })
   };
   if (secret && userID) {
