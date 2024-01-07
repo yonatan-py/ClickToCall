@@ -3,6 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
 }
+android.buildFeatures.buildConfig = true
+
+val prodHost by extra("https://server-lcsufro3ya-uc.a.run.app")
+val devHost by extra("http://localhost:8080")
 
 android {
     namespace = "com.uruk.clicktocall"
@@ -28,6 +32,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "API_URL", "\"$prodHost\"")
+        }
+        debug {
+            buildConfigField("String", "API_URL", "\"$prodHost\"")
         }
     }
     compileOptions {
