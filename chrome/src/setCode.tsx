@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
+import { apiUrl } from './config';
+
 
 const sendCodeToServer = async (code: string, onDone: () => void) => {
-    const response = await fetch("http://localhost:8080/code", {
+    const response = await fetch(`${apiUrl}/code`, {
         method: "POST",
         body: JSON.stringify({ code }),
         headers: {"Content-type": "application/json"}
@@ -17,32 +19,27 @@ const sendCodeToServer = async (code: string, onDone: () => void) => {
     onDone()
 }
 
-const SetCode = () => {
-    
-    
-    const [secret, setSecret] = useState();
-    const [userID, setUserID] = useState();
-    const [code, setCode] = useState();
-    function updateCredentials() {
-        chrome.storage.local.get(["clickToCall.secret", "clickToCall.userID"], (data) => {
-            console.log(data)
-            setSecret(data["clickToCall.secret"])
-            setUserID(data["clickToCall.userID"])
-        })
-    }
+type SetCodeProps = {
+    updateCredentials: () => void,
+    isLoggedin: () => boolean
+}
+
+function SetCode({isLoggedin, updateCredentials}: SetCodeProps) {
     updateCredentials()
+    const [code, setCode] = useState("");
     
-    const onCodeUpdate = async (event: any) => {
-        const code = event.target.value
-        setCode(code)
-        // TODO: check if code should be longer
-        if (code.length === 3) {
-            sendCodeToServer(code, updateCredentials)
+    
+    const onCodeUpdate = async (newCode: string) => {
+        // TODO: code should be longer
+        if (newCode.length === 3 && !isLoggedin()) {
+            sendCodeToServer(newCode, updateCredentials)
         }
     }
-    return (secret && userID ?
-            <div>Logged in!</div>:
-            <input type="text" value={code} onChange={onCodeUpdate}/>)
+    useEffect(() => {
+        console.log("code changed")
+        onCodeUpdate(code)
+    }, [code])
+    return <input type="text" value={code} onChange={e => setCode(e.target.value)}/>
 }
 
 export default SetCode;

@@ -1,6 +1,9 @@
-chrome.runtime.onInstalled.addListener(async () => {
+import { apiUrl } from "./config";
+
+
+const main = async () => {
+  console.log("installed")
   const data = await chrome.storage.local.get(["clickToCall.secret", "clickToCall.userID"])
-  
   console.log(data)
   var secret = data["clickToCall.secret"]
   var userID = data["clickToCall.userID"] 
@@ -13,17 +16,14 @@ chrome.runtime.onInstalled.addListener(async () => {
       userId: userID,
       secret: secret,
     }
-    fetch('http://localhost:8080/call', {
+    // TODO: deal with errors
+    fetch(`${apiUrl}/call`, {
       method: "POST",
       body: JSON.stringify(data),
-      headers: {
-          "Content-type": "application/json"
-      }
-    }).then(res => {
-      console.log("call sent to server")
-      console.log(res.json())
+      headers: {"Content-type": "application/json"}
     })
   };
+  // TODO: this is somewhat tricky...
   if (secret && userID) {
     chrome.contextMenus.create({
       title: 'Call',
@@ -32,4 +32,6 @@ chrome.runtime.onInstalled.addListener(async () => {
     });
     chrome.contextMenus.onClicked.addListener(onClick);
   }
-})
+}
+
+main()
