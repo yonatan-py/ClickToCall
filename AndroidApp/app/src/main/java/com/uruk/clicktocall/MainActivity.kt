@@ -6,7 +6,6 @@ import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -109,10 +108,12 @@ class SendCodeToServer : AsyncTask<String, Void, Response?>() {
     @Deprecated("Deprecated in Java")
     override fun doInBackground(vararg params: String): Response? {
         try {
-
-            val url = "https://3e50-77-137-20-18.ngrok-free.app/code"
+            val baseUrl = BuildConfig.API_URL
+            val url = "${baseUrl}/code"
+            Log.d("url", url)
             val codePayload = JSONObject()
             val token = params[0]
+            Log.d("token", token)
             val code = params[1]
             codePayload.put("code", code)
             codePayload.put("androidToken", token)
