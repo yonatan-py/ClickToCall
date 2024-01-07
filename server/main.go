@@ -4,17 +4,23 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	firebase "firebase.google.com/go"
+	"flag"
 	"google.golang.org/api/option"
 	"log"
 	"net/http"
+	"server/configs"
 )
 
 const projectID = "click-to-call-d2769"
 
 func main() {
+	var env = flag.String("env", "dev", "environment")
+	flag.Parse()
+	log.Printf("Main:%s", *env)
+	config := configs.GetConfig(*env)
 	ctx := context.Background()
-	opt := option.WithCredentialsFile("./click-to-call.json")
-	app, err := firebase.NewApp(context.Background(), nil, opt)
+	opt := config["firebaseOptions"].(option.ClientOption)
+	app, err := firebase.NewApp(context.Background(), &firebase.Config{ProjectID: projectID}, opt)
 	if err != nil {
 		log.Fatalf("Error initializing Firebase app: %v", err)
 	}
@@ -28,6 +34,7 @@ func main() {
 	}
 
 	http.HandleFunc("/code", getCodeHandler(ctx, firestoreClient, messagingClient))
-	http.HandleFunc("/call", getCallHandler(ctx, messagingClient, firestoreClient))
+	http.HandleFunc("/call", getCallHandler(ctx, firestoreClient, messagingClient))
+	http.HandleFunc("/healthy", HealthCheckHandler)
 	http.ListenAndServe(":8080", nil)
 }

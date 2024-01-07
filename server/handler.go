@@ -13,7 +13,6 @@ import (
 type CodePayload struct {
 	Code         string  `json:"code"`
 	UserId       *string `json:"userid"`
-	WebToken     *string `json:"webToken"`
 	AndroidToken *string `json:"androidToken"`
 }
 
@@ -42,6 +41,7 @@ func parseJson(request *http.Request, payload interface{}) error {
 	return nil
 }
 
+// TODO: refactor as a function that gets: method and http.ResponseWriter
 func getHandler(method string, action func(w http.ResponseWriter, request *http.Request)) func(w http.ResponseWriter, request *http.Request) {
 	return func(w http.ResponseWriter, request *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "chrome-extension://hnedcaamblfpdpkblfocnjchfbianddf")
@@ -52,11 +52,11 @@ func getHandler(method string, action func(w http.ResponseWriter, request *http.
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		if request.Method == method {
-			action(w, request)
+		if request.Method != method {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		action(w, request)
 	}
 }
 
@@ -64,6 +64,9 @@ func getCodeHandler(ctx context.Context, firestoreClient *firestore.Client, mess
 	action := func(w http.ResponseWriter, request *http.Request) {
 		var codePayload CodePayload
 		parseJson(request, &codePayload)
+		log.Printf("codePayload: code: %s", codePayload.Code)
+		log.Printf("codePayload: androidToken: %s", codePayload.AndroidToken)
+		log.Printf("codePayload: userId: %s", codePayload.UserId)
 		if codePayload.AndroidToken != nil {
 			// initial request from Android, user sends code and androidToken and user is created
 			userId := createUser(ctx, firestoreClient, codePayload.Code, *codePayload.AndroidToken)
@@ -99,7 +102,7 @@ func getCodeHandler(ctx context.Context, firestoreClient *firestore.Client, mess
 	return getHandler(http.MethodPost, action)
 }
 
-func getCallHandler(ctx context.Context, messagingClient *messaging.Client, firestoreClient *firestore.Client) func(w http.ResponseWriter, request *http.Request) {
+func getCallHandler(ctx context.Context, firestoreClient *firestore.Client, messagingClient *messaging.Client) func(w http.ResponseWriter, request *http.Request) {
 	action := func(w http.ResponseWriter, request *http.Request) {
 		var callPayload CallPayload
 		parseJson(request, &callPayload)
@@ -107,7 +110,9 @@ func getCallHandler(ctx context.Context, messagingClient *messaging.Client, fire
 		// TODO: check secret
 		user := getUserById(ctx, firestoreClient, callPayload.UserId)
 		if user["secret"] == callPayload.Secret {
+			log.Printf("user authenticated: %s", user)
 			androidToken := user["androidToken"].(string)
+			log.Printf("androidToken: %s", androidToken)
 			message := &messaging.Message{
 				Data: map[string]string{
 					"number": callPayload.Number,
@@ -122,4 +127,8 @@ func getCallHandler(ctx context.Context, messagingClient *messaging.Client, fire
 		}
 	}
 	return getHandler(http.MethodPost, action)
+}
+
+func HealthCheckHandler(w http.ResponseWriter, request *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }

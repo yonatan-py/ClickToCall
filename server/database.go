@@ -49,12 +49,8 @@ func getUserById(ctx context.Context, firestoreClient *firestore.Client, userId 
 
 func getAndroidToken(ctx context.Context, firestoreClient *firestore.Client, userId string) string {
 	user := getUserById(ctx, firestoreClient, userId)
+	log.Printf("user: %s", user)
 	return user["androidToken"].(string)
-}
-
-func getWebTokenBy(ctx context.Context, firestoreClient *firestore.Client, userId string) string {
-	user := getUserById(ctx, firestoreClient, userId)
-	return user["webToken"].(string)
 }
 
 func getUserIdByCode(ctx context.Context, firestoreClient *firestore.Client, code string) string {
