@@ -11,15 +11,26 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import androidx.datastore.preferences.core.stringPreferencesKey as preferencesKey
 
+
+val ACTION_USER_LOGGEDIN = "com.uruk.clicktocall.USER_LOGGEDIN"
 
 class MessagingService : FirebaseMessagingService() {
+
+    private val dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+    private val SECRETKEY_KEY = preferencesKey("secretKey")
+
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         // TODO(developer): Handle FCM messages here.
@@ -29,21 +40,23 @@ class MessagingService : FirebaseMessagingService() {
         // Check if message contains a data payload.
         if (remoteMessage.data.isNotEmpty()) {
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
-
-            // Check if data needs to be processed by long running job
-            if (needsToBeScheduled()) {
-                // For long-running tasks (10 seconds or more) use WorkManager.
-                scheduleJob()
+            val secret = remoteMessage?.data?.get("secret") ?: ""
+            if (secret.isEmpty()) {
+                remoteMessage.notification?.let {
+                    Log.d(TAG, "Message Notification Body: ${it.body}")
+                    sendNotification("${it.body}")
+                }
             } else {
-                // Handle message within 10 seconds
-                handleNow()
+                suspend {
+                    dataStore.edit { mutablePreferences ->
+                        mutablePreferences[SECRETKEY_KEY] = secret
+                    }
+                }
+                val updateIntent = Intent(ACTION_USER_LOGGEDIN)
+                updateIntent.putExtra("secret", secret)
+                sendBroadcast(updateIntent)
+                Log.d(TAG, "Sent broadcast")
             }
-        }
-
-        // Check if message contains a notification payload.
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-            sendNotification("${it.body}")
         }
     }
 

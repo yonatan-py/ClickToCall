@@ -1,6 +1,10 @@
 package com.uruk.clicktocall
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.AsyncTask
 import android.os.Build
@@ -9,20 +13,34 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.edit
+
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.uruk.clicktocall.ui.theme.ClickToCallTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -34,10 +52,12 @@ import java.io.IOException
 
 
 class MainActivity : ComponentActivity() {
-
     private val TAG = "MainActivity"
     private var code = ""
     private var token = ""
+    private val dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+
+    private val SECRETKEY_KEY = stringPreferencesKey("secretKey")
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -49,25 +69,70 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        code = "123"
+        val filter = IntentFilter(ACTION_USER_LOGGEDIN)
+
+        var secretKeyFlow: Flow<String> = dataStore.data.map { preferences: Preferences ->
+            preferences[SECRETKEY_KEY] ?: ""
+        }
+
+
+        code = generateCode()
+
         setContent {
+            var secretKey by remember { mutableStateOf("") }
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    when (intent?.action) {
+                        ACTION_USER_LOGGEDIN -> {
+                            secretKey = intent.getStringExtra("secret") ?: ""
+                        }
+                    }
+                }
+            }
+            registerReceiver(receiver, filter, RECEIVER_EXPORTED)
             ClickToCallTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+
                     val coroutineScope = rememberCoroutineScope()
                     LaunchedEffect(code, token) {
                         Log.i(TAG, "code: $code")
                         Log.i(TAG, "token: $token")
+
                         coroutineScope.launch {
-                            SendCodeToServer().execute(token, code)
+                            SendCodeToServer { success, response ->
+                                Log.i(TAG, "success: $success")
+                                Log.i(TAG, "response: $response")
+                            }.execute(token, code)
                         }
                     }
-                    ShowCode(code)
+
+                    secretKeyFlow.map { value ->
+                        secretKey = value
+                    }
+                    Log.d(TAG, "secretKey: $secretKey")
+
+
+                    Log.d(TAG, "loggedIn.: $secretKey")
+                    if (secretKey != "") {
+                        LoggedIn {
+                            secretKey = ""
+                            coroutineScope.launch {
+                                dataStore.edit { mutablePreferences ->
+                                    mutablePreferences[SECRETKEY_KEY] = ""
+                                }
+                            }
+                        }
+                    } else {
+                        ShowCode(code)
+                    }
                 }
             }
         }
@@ -82,6 +147,16 @@ class MainActivity : ComponentActivity() {
             Log.d(TAG, msg)
         })
         askNotificationPermission()
+    }
+
+    private fun generateCode(): String {
+        val chars = "0123456789"
+        val codeLength = 6
+        var code = ""
+        for (i in 0 until codeLength) {
+            code += chars.random()
+        }
+        return code
     }
     private fun askNotificationPermission() {
         // This is only necessary for API level >= 33 (TIRAMISU)
@@ -103,7 +178,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-class SendCodeToServer : AsyncTask<String, Void, Response?>() {
+
+class SendCodeToServer(private val callback: (Boolean, String) -> Unit) : AsyncTask<String, Void, Response?>() {
 
     @Deprecated("Deprecated in Java")
     override fun doInBackground(vararg params: String): Response? {
@@ -136,6 +212,7 @@ class SendCodeToServer : AsyncTask<String, Void, Response?>() {
                 }
 
                 println(response.body!!.string())
+                callback(true, response.body!!.string())
             }
             return null
         } catch (e: Exception) {
@@ -154,7 +231,18 @@ class SendCodeToServer : AsyncTask<String, Void, Response?>() {
 @Composable
 fun ShowCode(code: String) {
     Column {
+        Text("Set this code in the Chrome extension:")
         Text(code)
+    }
+}
+
+@Composable
+fun LoggedIn(logout: () -> Unit = {}) {
+    Column {
+        Text("You are logged in!")
+        Button(onClick = logout) {
+            Text("Log out")
+        }
     }
 }
 
