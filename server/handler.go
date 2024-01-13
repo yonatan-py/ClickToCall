@@ -80,7 +80,8 @@ func getCodeHandler(ctx context.Context, firestoreClient *firestore.Client, mess
 			saveUserSecret(ctx, firestoreClient, userId, secret)
 			message := &messaging.Message{
 				Data: map[string]string{
-					"ok": "true",
+					"ok":     "true",
+					"secret": secret,
 				},
 				Token: androidToken,
 			}
