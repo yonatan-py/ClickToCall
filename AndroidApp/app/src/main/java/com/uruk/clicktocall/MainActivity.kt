@@ -69,9 +69,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val filter = IntentFilter(ACTION_USER_LOGGEDIN)
@@ -79,7 +76,6 @@ class MainActivity : ComponentActivity() {
         var secretKeyFlow: Flow<String> = dataStore.data.map { preferences: Preferences ->
             preferences[SECRETKEY_KEY] ?: ""
         }
-
 
         code = generateCode()
 
@@ -118,9 +114,6 @@ class MainActivity : ComponentActivity() {
                         secretKey = value
                     }
                     Log.d(TAG, "secretKey: $secretKey")
-
-
-                    Log.d(TAG, "loggedIn.: $secretKey")
                     if (secretKey != "") {
                         LoggedIn {
                             secretKey = ""
