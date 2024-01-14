@@ -10,8 +10,8 @@ import (
 	"net/http"
 )
 
-type CodePayload struct {
-	Code         string  `json:"code"`
+type AuthPayload struct {
+	Code         *string `json:"code"`
 	UserId       *string `json:"userid"`
 	AndroidToken *string `json:"androidToken"`
 }
@@ -60,21 +60,38 @@ func getHandler(method string, action func(w http.ResponseWriter, request *http.
 	}
 }
 
+func getLogoutHandler(ctx context.Context, firestoreClient *firestore.Client, messagingClient *messaging.Client) func(w http.ResponseWriter, request *http.Request) {
+	action := func(w http.ResponseWriter, request *http.Request) {
+		var callPayload CallPayload
+		parseJson(request, &callPayload)
+		log.Printf("callPayload: %s", callPayload)
+		// TODO: check secret
+		user := getUserById(ctx, firestoreClient, callPayload.UserId)
+		if user["secret"] == callPayload.Secret {
+			deleteUser(ctx, firestoreClient, callPayload.UserId)
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+	}
+	return getHandler(http.MethodPost, action)
+}
+
 func getCodeHandler(ctx context.Context, firestoreClient *firestore.Client, messagingClient *messaging.Client) func(w http.ResponseWriter, request *http.Request) {
 	action := func(w http.ResponseWriter, request *http.Request) {
-		var codePayload CodePayload
+		var codePayload AuthPayload
 		parseJson(request, &codePayload)
 		log.Printf("codePayload: code: %s", codePayload.Code)
 		log.Printf("codePayload: androidToken: %s", codePayload.AndroidToken)
 		log.Printf("codePayload: userId: %s", codePayload.UserId)
 		if codePayload.AndroidToken != nil {
 			// initial request from Android, user sends code and androidToken and user is created
-			userId := createUser(ctx, firestoreClient, codePayload.Code, *codePayload.AndroidToken)
+			userId := createUser(ctx, firestoreClient, *codePayload.Code, *codePayload.AndroidToken)
 			log.Printf("userCreaed id: %s", userId)
 			w.WriteHeader(http.StatusCreated)
 		} else {
 			// matching request from android, user sends code and chrome is sent secret and userid
-			userId := getUserIdByCode(ctx, firestoreClient, codePayload.Code)
+			userId := getUserIdByCode(ctx, firestoreClient, *codePayload.Code)
 			androidToken := getAndroidToken(ctx, firestoreClient, userId)
 			secret := RandString()
 			saveUserSecret(ctx, firestoreClient, userId, secret)

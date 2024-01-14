@@ -33,6 +33,7 @@ func main() {
 		log.Fatalf("Error getting Messaging messagingClient: %v\n", err)
 	}
 
+	http.HandleFunc("/logout", getLogoutHandler(ctx, firestoreClient, messagingClient))
 	http.HandleFunc("/code", getCodeHandler(ctx, firestoreClient, messagingClient))
 	http.HandleFunc("/call", getCallHandler(ctx, firestoreClient, messagingClient))
 	http.HandleFunc("/healthy", HealthCheckHandler)

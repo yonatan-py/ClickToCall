@@ -36,6 +36,10 @@ func saveUserSecret(ctx context.Context, firestoreClient *firestore.Client, user
 	firestoreClient.Collection("users").Doc(userId).Set(ctx, map[string]interface{}{"secret": secret}, firestore.MergeAll)
 }
 
+func deleteUser(ctx context.Context, firestoreClient *firestore.Client, userId string) {
+	firestoreClient.Collection("users").Doc(userId).Delete(ctx)
+}
+
 func getUserById(ctx context.Context, firestoreClient *firestore.Client, userId string) map[string]interface{} {
 	doc, err := firestoreClient.Collection("users").Doc(userId).Get(ctx)
 	if err != nil {
